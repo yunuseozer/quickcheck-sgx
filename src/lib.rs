@@ -6,6 +6,17 @@
 
 #![cfg_attr(feature = "i128", feature(i128_type, i128))]
 
+#![cfg_attr(all(feature = "mesalock_sgx",
+                not(target_env = "sgx")), no_std)]
+#![cfg_attr(all(target_env = "sgx", target_vendor = "mesalock"), feature(rustc_private))]
+#![allow(deprecated)]
+
+#[cfg(all(feature = "mesalock_sgx", not(target_env = "sgx")))]
+#[macro_use]
+extern crate sgx_tstd as std;
+
+use std::prelude::v1::*;
+
 #[cfg(feature = "use_logging")]
 extern crate env_logger;
 #[cfg(feature = "use_logging")]
@@ -57,9 +68,9 @@ macro_rules! quickcheck {
         $crate::quickcheck! {
             @as_items
             $(
-                #[test]
+                //#[test]
                 $(#[$m])*
-                fn $fn_name() {
+                pub fn $fn_name() {
                     fn prop($($arg_name: $arg_ty),*) -> $ret {
                         $($code)*
                     }
