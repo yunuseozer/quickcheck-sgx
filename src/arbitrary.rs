@@ -1,3 +1,6 @@
+use std::prelude::v1::*;
+#[cfg(all(feature = "mesalock_sgx", not(target_env = "sgx")))]
+use std::untrusted::path::PathEx;
 use std::char;
 use std::collections::{
     BTreeMap, BTreeSet,
@@ -6,6 +9,7 @@ use std::collections::{
     LinkedList,
     VecDeque,
 };
+#[cfg(not(feature = "mesalock_sgx"))]
 use std::env;
 use std::ffi::OsString;
 use std::hash::{BuildHasher, Hash};
@@ -495,12 +499,15 @@ impl Arbitrary for PathBuf {
     fn arbitrary<G: Gen>(g: &mut G) -> PathBuf {
         // use some real directories as guesses, so we may end up with
         // actual working directories in case that is relevant.
-        let here = env::current_dir()
-            .unwrap_or(PathBuf::from("/test/directory"));
-        let temp = env::temp_dir();
-        #[allow(deprecated)]
-        let home = env::home_dir()
-            .unwrap_or(PathBuf::from("/home/user"));
+        //let here = env::current_dir()
+        //    .unwrap_or(PathBuf::from("/test/directory"));
+        //let temp = env::temp_dir();
+        //#[allow(deprecated)]
+        //let home = env::home_dir()
+        //    .unwrap_or(PathBuf::from("/home/user"));
+        let here = PathBuf::from("/test/directory");
+        let temp = PathBuf::from("/tmp");
+        let home = PathBuf::from("/home/user");
         let choices = &[
             here,
             temp,
@@ -531,6 +538,8 @@ impl Arbitrary for PathBuf {
         // Add the canonicalized variant only if canonicalizing the path
         // actually does something, making it (hopefully) smaller. Also, ignore
         // canonicalization if canonicalization errors.
+        #[cfg(target_env = "sgx")]
+        use std::untrusted::path::PathEx;
         if let Ok(canonicalized) = self.canonicalize() {
             if canonicalized.as_os_str() != self.as_os_str() {
                 shrunk.push(canonicalized);
@@ -645,6 +654,7 @@ impl Arbitrary for char {
 macro_rules! unsigned_shrinker {
     ($ty:ty) => {
         mod shrinker {
+            use std::prelude::v1::*;
             pub struct UnsignedShrinker {
                 x: $ty,
                 i: $ty,
@@ -711,6 +721,7 @@ unsigned_arbitrary! {
 macro_rules! signed_shrinker {
     ($ty:ty) => {
         mod shrinker {
+            use std::prelude::v1::*;
             pub struct SignedShrinker {
                 x: $ty,
                 i: $ty,
